@@ -71,6 +71,28 @@ def parse_weibo_time(time_str):
     except ValueError:
         pass
 
+    # --- 新增：处理中文日期格式 (搜索页常见) ---
+    
+    # YYYY年MM月DD日 HH:MM
+    try:
+        return datetime.strptime(time_str, "%Y年%m月%d日 %H:%M")
+    except ValueError:
+        pass
+
+    # 正则匹配中文日期，解决单双数日问题 (10月4日 vs 10月04日)
+    # 格式: 10月31日 18:58
+    match = re.search(r"(\d{1,2})月(\d{1,2})日\s+(\d{1,2}):(\d{1,2})", time_str)
+    if match:
+        month, day, hour, minute = map(int, match.groups())
+        return now.replace(month=month, day=day, hour=hour, minute=minute, second=0, microsecond=0)
+
+    # 格式: 10月31日 (无时间，通常默认为 00:00 或当前时间? 搜索页一般都有时间，除了很老的)
+    match = re.search(r"(\d{1,2})月(\d{1,2})日", time_str)
+    if match:
+        month, day = map(int, match.groups())
+        return now.replace(month=month, day=day, hour=0, minute=0, second=0, microsecond=0)
+    # ----------------------------------------
+
     # 如果都匹配不上，返回 None 或当前时间（视情况而定，这里返回 None 以便报错）
     print(f"Warning: Unknown time format: {time_str}")
     return None
